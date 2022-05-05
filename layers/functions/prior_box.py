@@ -46,8 +46,8 @@ class PriorBox(object):
 
                 # rest of aspect ratios
                 for ar in self.aspect_ratios[k]:
-                    mean += [cx, cy, s_k*sqrt(ar), s_k/sqrt(ar)]
-                    mean += [cx, cy, s_k/sqrt(ar), s_k*sqrt(ar)]
+                    mean += [cx, cy, s_k*sqrt(ar), s_k*sqrt(ar)]
+                    mean += [cx, cy, s_k/sqrt(ar), s_k/sqrt(ar)]
         # back to torch land
         output = torch.Tensor(mean).view(-1, 4)
         if self.clip:
