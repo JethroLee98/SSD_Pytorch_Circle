@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import torch
+import math
 
 
 def point_form(boxes):
@@ -47,6 +48,62 @@ def intersect(box_a, box_b):
     return inter[:, :, 0] * inter[:, :, 1]
 
 
+def circleRectangleIntersectionArea(box_a, box_b):         
+#find the signed (negative out) normalized distance from the circle center to each of the infinitely extended rectangle edge lines,
+
+    A = box_a.size(0)
+    B = box_b.size(0)
+    box_a = box_a.unsqueeze(1).expand(A, B, 4)
+    box_b = box_b.unsqueeze(0).expand(A, B, 4)
+    r = (box_b[:, :, 2]-box_b[:, :, 0])/2
+    xcenter = (box_b[:, :, 2]+box_b[:, :, 0])/2
+    ycenter = (box_b[:, :, 3]+box_b[:, :, 1])/2
+    xleft = box_a[:, :, 0]
+    xright = box_a[:, :, 2]
+    ybottom = box_a[:, :, 1]
+    ytop = box_a[:, :, 3]
+    
+    d = [0, 0, 0, 0]
+    d[0]=(xcenter-xleft)/r
+    d[1]=(ycenter-ybottom)/r
+    d[2]=(xright-xcenter)/r
+    d[3]=(ytop-ycenter)/r
+    #for convenience order 0,1,2,3 around the edge.
+
+    # To begin, area is full circle
+    area = torch.tensor(np.ones([A, B]))
+    area = area*math.pi*r*r
+
+    # Check if circle is completely outside rectangle, or a full circle
+    full = True
+    for d_i in d:
+        area[d_i <= -1] = 0
+        
+    # this leave only one remaining fully outside case: circle center in an external quadrant, and distance to corner greater than circle radius:
+    #for each adjacent i,j
+    adj_quads = [1,2,3,0]
+    for i in [0,1,2,3]:
+        j=adj_quads[i]
+        area[(d[i]<=0) * (d[j]<=0) * (d[i]*d[i]+d[j]*d[j]>1) * (d[i]<1) * (d[j]<1)] = 0
+
+    # now begin with full circle area  and subtract any areas in the four external half planes
+    a = [0, 0, 0, 0]
+    for d_i in d:
+        if d_i[(d_i>-1) * (d_i<1)].size(0) != 0:
+            index = (d_i>-1) * (d_i<1)
+            area[index] -= 0.5*r[index]*r[index]*(math.pi - 2*torch.asin(d_i[index]) - torch.sin(2*torch.asin(d_i[index])))
+
+    # At this point note we have double counted areas in the four external quadrants, so add back in:
+    #for each adjacent i,j
+    
+    for i in [0,1,2,3]:
+        j=adj_quads[i]
+        index = (d[i]<1) * (d[j]<1) * (d[i]*d[i]+d[j]*d[j]< 1)
+        area[index] += 0.25*r[index]*r[index]*(math.pi - 2*torch.asin(d[i][index]) - 2*torch.asin(d[j][index]) - torch.sin(2*torch.asin(d[i][index])) - torch.sin(2*torch.asin(d[j][index])) + 4*torch.sin(torch.asin(d[i][index]))*torch.sin(torch.asin(d[j][index])))
+    
+    return area
+
+
 def jaccard(box_a, box_b):
     """Compute the jaccard overlap of two sets of boxes.  The jaccard overlap
     is simply the intersection over union of two boxes.  Here we operate on
@@ -62,8 +119,8 @@ def jaccard(box_a, box_b):
     inter = intersect(box_a, box_b)
     area_a = ((box_a[:, 2]-box_a[:, 0]) *
               (box_a[:, 3]-box_a[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
-    area_b = ((box_b[:, 2]-box_b[:, 0]) *
-              (box_b[:, 3]-box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
+    area_b = ((box_b[:, 2]-box_b[:, 0])**2 *
+              math.pi).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
     return inter / union  # [A,B]
 
