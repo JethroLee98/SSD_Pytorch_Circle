@@ -12,6 +12,7 @@ This implementation changes the shape of anchor boxes from rectangles to circles
 - <a href='#evaluation'>Evaluate</a>
 - <a href='#performance'>Performance</a>
 - <a href='#demos'>Demos</a>
+- <a href='#references'>References</a>
 
 &nbsp;
 &nbsp;
@@ -153,3 +154,7 @@ jupyter notebook
 - Install the [imutils](https://github.com/jrosebr1/imutils) package to leverage multi-threading on CPU:
   * `pip install imutils`
 - Running `python -m demo.live` opens the webcam and begins detecting!
+
+## References
+- https://github.com/alexweissman/geometry
+- https://github.com/amdegroot/ssd.pytorch
