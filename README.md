@@ -1,5 +1,6 @@
 # SSD: Single Shot MultiBox Object Detector, in PyTorch
 A [PyTorch](http://pytorch.org/) implementation of [Single Shot MultiBox Detector](http://arxiv.org/abs/1512.02325) from the 2016 paper by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang, and Alexander C. Berg.  The official and original Caffe code can be found [here](https://github.com/weiliu89/caffe/tree/ssd).
+This implementation changes the shape of anchor boxes from rectangles to circles
 
 
 <img align="right" src= "https://github.com/amdegroot/ssd.pytorch/blob/master/doc/ssd.png" height = 400/>
@@ -20,7 +21,8 @@ A [PyTorch](http://pytorch.org/) implementation of [Single Shot MultiBox Detecto
 ## Changes
 - Change the prior anchor shape from rectangles to circles (with different scale of radius)
 - Change the function of calculate IoU
-- 
+
+
 ## Installation
 - Install [PyTorch](http://pytorch.org/) by selecting your environment on the website and running the appropriate command.
 - Clone this repository.
