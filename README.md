@@ -11,14 +11,16 @@ A [PyTorch](http://pytorch.org/) implementation of [Single Shot MultiBox Detecto
 - <a href='#evaluation'>Evaluate</a>
 - <a href='#performance'>Performance</a>
 - <a href='#demos'>Demos</a>
-- <a href='#todo'>Future Work</a>
-- <a href='#references'>Reference</a>
 
 &nbsp;
 &nbsp;
 &nbsp;
 &nbsp;
 
+## Changes
+- Change the prior anchor shape from rectangles to circles (with different scale of radius)
+- Change the function of calculate IoU
+- 
 ## Installation
 - Install [PyTorch](http://pytorch.org/) by selecting your environment on the website and running the appropriate command.
 - Clone this repository.
@@ -79,6 +81,10 @@ wget https://s3.amazonaws.com/amdegroot-models/vgg16_reducedfc.pth
 python train.py
 ```
 
+Params used: 
+- batch size = 64
+- learning rate = 1e^-5
+
 - Note:
   * For training, an NVIDIA GPU is strongly recommended for speed.
   * For instructions on Visdom usage/installation, see the <a href='#installation'>Installation</a> section.
@@ -118,11 +124,6 @@ You can specify the parameters listed in the `eval.py` file by flagging them or 
 - Currently, we provide the following PyTorch models:
     * SSD300 trained on VOC0712 (newest PyTorch weights)
       - https://s3.amazonaws.com/amdegroot-models/ssd300_mAP_77.43_v2.pth
-    * SSD300 trained on VOC0712 (original Caffe weights)
-      - https://s3.amazonaws.com/amdegroot-models/ssd_300_VOC0712.pth
-- Our goal is to reproduce this table from the [original paper](http://arxiv.org/abs/1512.02325)
-<p align="left">
-<img src="http://www.cs.unc.edu/~wliu/papers/ssd_results.png" alt="SSD results on multiple datasets" width="800px"></p>
 
 ### Try the demo notebook
 - Make sure you have [jupyter notebook](http://jupyter.readthedocs.io/en/latest/install.html) installed.
