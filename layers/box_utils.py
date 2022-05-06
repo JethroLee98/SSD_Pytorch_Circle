@@ -48,6 +48,7 @@ def intersect(box_a, box_b):
     return inter[:, :, 0] * inter[:, :, 1]
 
 
+
 def circleRectangleIntersectionArea(box_a, box_b):         
 #find the signed (negative out) normalized distance from the circle center to each of the infinitely extended rectangle edge lines,
 
@@ -167,6 +168,11 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
     loc = encode(matches, priors, variances)
     loc_t[idx] = loc    # [num_priors,4] encoded offsets to learn
     conf_t[idx] = conf  # [num_priors] top class label for each prior
+
+
+def circleintersect():
+    area = []
+    return area
 
 
 def encode(matched, priors, variances):
@@ -291,6 +297,72 @@ def nms(boxes, scores, overlap=0.5, top_k=200):
         rem_areas = torch.index_select(area, 0, idx)  # load remaining areas)
         union = (rem_areas - inter) + area[i]
         IoU = inter/union  # store result in iou
+        # keep only elements with an IoU <= overlap
+        idx = idx[IoU.le(overlap)]
+    return keep, count
+
+def nms_circle(boxes, scores, overlap=0.5, top_k=200):
+    """Apply non-maximum suppression at test time to avoid detecting too many
+    overlapping bounding boxes for a given object.
+    Args:
+        boxes: (tensor) The location preds for the img, Shape: [num_priors,4].
+        scores: (tensor) The class predscores for the img, Shape:[num_priors].
+        overlap: (float) The overlap thresh for suppressing unnecessary boxes.
+        top_k: (int) The Maximum number of box preds to consider.
+    Return:
+        The indices of the kept boxes with respect to num_priors.
+    """
+
+    keep = scores.new(scores.size(0)).zero_().long()
+    if boxes.numel() == 0:
+        return keep
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+    area = torch.mul(x2 - x1, y2 - y1)
+    v, idx = scores.sort(0)  # sort in ascending order
+    # I = I[v >= 0.01]
+    idx = idx[-top_k:]  # indices of the top-k largest vals
+    xx1 = boxes.new()
+    yy1 = boxes.new()
+    xx2 = boxes.new()
+    yy2 = boxes.new()
+    
+    # keep = torch.Tensor()
+    count = 0
+    while idx.numel() > 0:
+        i = idx[-1]  # index of current largest val
+        # keep.append(i)
+        keep[count] = i
+        count += 1
+        if idx.size(0) == 1:
+            break
+        idx = idx[:-1]  # remove kept element from view
+        # load bboxes of next highest vals
+        torch.index_select(x1, 0, idx, out=xx1)
+        torch.index_select(y1, 0, idx, out=yy1)
+        torch.index_select(x2, 0, idx, out=xx2)
+        torch.index_select(y2, 0, idx, out=yy2)
+        cx1 = ((x1[i]+x2[i])/2).expand(xx1.size(0), 1)
+        cy1 = ((y1[i]+y2[i])/2).expand(xx1.size(0), 1)
+        cx2 = ((xx1+xx2)/2).reshape(xx1.size(0), 1)
+        cy2 = ((yy1+yy2)/2).reshape(xx1.size(0), 1)
+        d = ((cx1-cx2)**2 + (cy1-cy2)**2)**0.5
+        r1 = ((x2[i]-x1[i])/2).expand(xx1.size(0), 1)
+        r2 = ((xx2-xx1)/2).reshape(xx1.size(0), 1)
+        r = r1
+        R = r2
+        r[r2<r1] = r2[r2<r1]
+        R[r2<r1] = r1[r2<r1]
+
+        part1 = r*r*torch.acos((d*d + r*r - R*R)/(2*d*r))
+        part2 = R*R*torch.acos((d*d + R*R - r*r)/(2*d*R))
+        part3 = 0.5*torch.sqrt((-d+r+R)*(d+r-R)*(d-r+R)*(d+r+R))
+
+        inter = part1 + part2 - part3
+        union = math.pi*((r1**2)+(r2**2))-inter
+        IoU = (inter/union).squeeze(1)  # store result in iou
         # keep only elements with an IoU <= overlap
         idx = idx[IoU.le(overlap)]
     return keep, count
