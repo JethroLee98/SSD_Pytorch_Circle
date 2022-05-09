@@ -115,6 +115,27 @@ You can specify the parameters listed in the `eval.py` file by flagging them or 
 |:-:|:-:|:-:|:-:|:-:|
 | 77.2 % | 77.26 % | 58.12% | 77.43 % | 48.32% |
 
+- AP for aeroplane = 0.5114
+- AP for bicycle = 0.6455
+- AP for bird = 0.4372
+- AP for boat = 0.2911
+- AP for bottle = 0.1018
+- AP for bus = 0.5863
+- AP for car = 0.6224
+- AP for cat = 0.6865
+- AP for chair = 0.2809
+- AP for cow = 0.3859
+- AP for diningtable = 0.4835
+- AP for dog = 0.6147
+- AP for horse = 0.6546
+- AP for motorbike = 0.6374
+- AP for person = 0.4883
+- AP for pottedplant = 0.1753
+- AP for sheep = 0.4395
+- AP for sofa = 0.5335
+- AP for train = 0.6240
+- AP for tvmonitor = 0.4642
+
 ##### FPS
 **GTX 1060:** ~45.45 FPS
 
