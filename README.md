@@ -111,9 +111,9 @@ You can specify the parameters listed in the `eval.py` file by flagging them or 
 
 ##### mAP
 
-| Original | Converted weiliu89 weights | From scratch w/o data aug | From scratch w/ data aug |
-|:-:|:-:|:-:|:-:|
-| 77.2 % | 77.26 % | 58.12% | 77.43 % |
+| Original | Converted weiliu89 weights | From scratch w/o data aug | From scratch w/ data aug | Change Anchor shape to circle |
+|:-:|:-:|:-:|:-:|:-:|
+| 77.2 % | 77.26 % | 58.12% | 77.43 % | 48.32% |
 
 ##### FPS
 **GTX 1060:** ~45.45 FPS
