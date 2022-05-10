@@ -49,60 +49,36 @@ def intersect(box_a, box_b):
 
 
 
-def circleRectangleIntersectionArea(box_a, box_b):         
-#find the signed (negative out) normalized distance from the circle center to each of the infinitely extended rectangle edge lines,
+def circleIntersect(box_a, box_b):         
+    #find the signed (negative out) normalized distance from the circle center to each of the infinitely extended rectangle edge lines,
 
     A = box_a.size(0)
     B = box_b.size(0)
     box_a = box_a.unsqueeze(1).expand(A, B, 4)
     box_b = box_b.unsqueeze(0).expand(A, B, 4)
-    r = (box_b[:, :, 2]-box_b[:, :, 0])/2
-    xcenter = (box_b[:, :, 2]+box_b[:, :, 0])/2
-    ycenter = (box_b[:, :, 3]+box_b[:, :, 1])/2
-    xleft = box_a[:, :, 0]
-    xright = box_a[:, :, 2]
-    ybottom = box_a[:, :, 1]
-    ytop = box_a[:, :, 3]
+    r1 = torch.clamp((box_a[:, :, 2]-box_a[:, :, 0])/2, min=(box_a[:, :, 3]-box_a[:, :, 1])/2)
+    r2 = torch.clamp((box_b[:, :, 2]-box_b[:, :, 0])/2, min=(box_b[:, :, 3]-box_b[:, :, 1])/2)
+    print(r1)
+    print(r2)
+    R = torch.clamp(r1, min=r2)
+    r = torch.clamp(r1, max=r2)
+    print(R)
+    print(r)
+    cx1 = (box_a[:, :, 2]+box_a[:, :, 0])/2
+    cy1 = (box_a[:, :, 3]+box_a[:, :, 1])/2
+    cx2 = (box_b[:, :, 2]+box_b[:, :, 0])/2
+    cy2 = (box_b[:, :, 3]+box_b[:, :, 1])/2
     
-    d = [0, 0, 0, 0]
-    d[0]=(xcenter-xleft)/r
-    d[1]=(ycenter-ybottom)/r
-    d[2]=(xright-xcenter)/r
-    d[3]=(ytop-ycenter)/r
-    #for convenience order 0,1,2,3 around the edge.
-
-    # To begin, area is full circle
-    area = torch.tensor(np.ones([A, B]))
-    area = area*math.pi*r*r
-
-    # Check if circle is completely outside rectangle, or a full circle
-    full = True
-    for d_i in d:
-        area[d_i <= -1] = 0
-        
-    # this leave only one remaining fully outside case: circle center in an external quadrant, and distance to corner greater than circle radius:
-    #for each adjacent i,j
-    adj_quads = [1,2,3,0]
-    for i in [0,1,2,3]:
-        j=adj_quads[i]
-        area[(d[i]<=0) * (d[j]<=0) * (d[i]*d[i]+d[j]*d[j]>1) * (d[i]<1) * (d[j]<1)] = 0
-
-    # now begin with full circle area  and subtract any areas in the four external half planes
-    a = [0, 0, 0, 0]
-    for d_i in d:
-        if d_i[(d_i>-1) * (d_i<1)].size(0) != 0:
-            index = (d_i>-1) * (d_i<1)
-            area[index] -= 0.5*r[index]*r[index]*(math.pi - 2*torch.asin(d_i[index]) - torch.sin(2*torch.asin(d_i[index])))
-
-    # At this point note we have double counted areas in the four external quadrants, so add back in:
-    #for each adjacent i,j
+    d = ((cx2-cx1)**2 + (cy2-cy1)**2)**0.5
     
-    for i in [0,1,2,3]:
-        j=adj_quads[i]
-        index = (d[i]<1) * (d[j]<1) * (d[i]*d[i]+d[j]*d[j]< 1)
-        area[index] += 0.25*r[index]*r[index]*(math.pi - 2*torch.asin(d[i][index]) - 2*torch.asin(d[j][index]) - torch.sin(2*torch.asin(d[i][index])) - torch.sin(2*torch.asin(d[j][index])) + 4*torch.sin(torch.asin(d[i][index]))*torch.sin(torch.asin(d[j][index])))
+    part1 = r*r*torch.acos((d*d + r*r - R*R)/(2*d*r))
+    part2 = R*R*torch.acos((d*d + R*R - r*r)/(2*d*R))
+    part3 = 0.5*torch.sqrt((-d+r+R)*(d+r-R)*(d-r+R)*(d+r+R))
+    intersectionArea = part1 + part2 - part3
+    intersectionArea[R>=d+r] = math.pi*r[R>=d+r]**2
     
-    return area
+    
+    return intersectionArea
 
 
 def jaccard(box_a, box_b):
@@ -117,10 +93,10 @@ def jaccard(box_a, box_b):
     Return:
         jaccard overlap: (tensor) Shape: [box_a.size(0), box_b.size(0)]
     """
-    inter = intersect(box_a, box_b)
-    area_a = ((box_a[:, 2]-box_a[:, 0]) *
-              (box_a[:, 3]-box_a[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
-    area_b = ((box_b[:, 2]-box_b[:, 0])**2 *
+    inter = circleIntersect(box_a, box_b)
+    area_a = (torch.clamp((box_a[:, :, 2]-box_a[:, :, 0])/2, min=(box_a[:, :, 3]-box_a[:, :, 1])/2)**2 *
+              math.pi).unsqueeze(1).expand_as(inter)  # [A,B]
+    area_b = (torch.clamp((box_b[:, :, 2]-box_b[:, :, 0])/2, min=(box_b[:, :, 3]-box_b[:, :, 1])/2)**2 *
               math.pi).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
     return inter / union  # [A,B]
