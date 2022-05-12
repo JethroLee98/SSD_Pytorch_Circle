@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 import math
+import numpy as np
 
 
 def point_form(boxes):
@@ -38,6 +39,9 @@ def intersect(box_a, box_b):
     Return:
       (tensor) intersection area, Shape: [A,B].
     """
+    if torch.cuda.is_available():
+        box_a = box_a.cuda()
+        box_b = box_b.cuda()
     A = box_a.size(0)
     B = box_b.size(0)
     max_xy = torch.min(box_a[:, 2:].unsqueeze(1).expand(A, B, 2),
@@ -48,22 +52,19 @@ def intersect(box_a, box_b):
     return inter[:, :, 0] * inter[:, :, 1]
 
 
-
 def circleIntersect(box_a, box_b):         
     #find the signed (negative out) normalized distance from the circle center to each of the infinitely extended rectangle edge lines,
-
+    if torch.cuda.is_available():
+        box_a = box_a.cuda()
+        box_b = box_b.cuda()
     A = box_a.size(0)
     B = box_b.size(0)
     box_a = box_a.unsqueeze(1).expand(A, B, 4)
     box_b = box_b.unsqueeze(0).expand(A, B, 4)
     r1 = torch.clamp((box_a[:, :, 2]-box_a[:, :, 0])/2, min=(box_a[:, :, 3]-box_a[:, :, 1])/2)
     r2 = torch.clamp((box_b[:, :, 2]-box_b[:, :, 0])/2, min=(box_b[:, :, 3]-box_b[:, :, 1])/2)
-    print(r1)
-    print(r2)
     R = torch.clamp(r1, min=r2)
     r = torch.clamp(r1, max=r2)
-    print(R)
-    print(r)
     cx1 = (box_a[:, :, 2]+box_a[:, :, 0])/2
     cy1 = (box_a[:, :, 3]+box_a[:, :, 1])/2
     cx2 = (box_b[:, :, 2]+box_b[:, :, 0])/2
@@ -76,8 +77,7 @@ def circleIntersect(box_a, box_b):
     part3 = 0.5*torch.sqrt((-d+r+R)*(d+r-R)*(d-r+R)*(d+r+R))
     intersectionArea = part1 + part2 - part3
     intersectionArea[R>=d+r] = math.pi*r[R>=d+r]**2
-    
-    
+    intersectionArea[d>=R+r] = 0
     return intersectionArea
 
 
@@ -93,10 +93,13 @@ def jaccard(box_a, box_b):
     Return:
         jaccard overlap: (tensor) Shape: [box_a.size(0), box_b.size(0)]
     """
+    if torch.cuda.is_available():
+        box_a = box_a.cuda()
+        box_b = box_b.cuda()
     inter = circleIntersect(box_a, box_b)
-    area_a = (torch.clamp((box_a[:, :, 2]-box_a[:, :, 0])/2, min=(box_a[:, :, 3]-box_a[:, :, 1])/2)**2 *
+    area_a = (torch.clamp((box_a[:, 2]-box_a[:, 0])/2, min=(box_a[:, 3]-box_a[:, 1])/2)**2 *
               math.pi).unsqueeze(1).expand_as(inter)  # [A,B]
-    area_b = (torch.clamp((box_b[:, :, 2]-box_b[:, :, 0])/2, min=(box_b[:, :, 3]-box_b[:, :, 1])/2)**2 *
+    area_b = (torch.clamp((box_b[:, 2]-box_b[:, 0])/2, min=(box_b[:, 3]-box_b[:, 1])/2)**2 *
               math.pi).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
     return inter / union  # [A,B]
@@ -146,11 +149,6 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
     conf_t[idx] = conf  # [num_priors] top class label for each prior
 
 
-def circleintersect():
-    area = []
-    return area
-
-
 def encode(matched, priors, variances):
     """Encode the variances from the priorbox layers into the ground truth boxes
     we have matched (based on jaccard overlap) with the prior boxes.
@@ -163,7 +161,9 @@ def encode(matched, priors, variances):
     Return:
         encoded boxes (tensor), Shape: [num_priors, 4]
     """
-
+    if torch.cuda.is_available():
+        matched = matched.cuda()
+        priors = priors.cuda()
     # dist b/t match center and prior's center
     g_cxcy = (matched[:, :2] + matched[:, 2:])/2 - priors[:, :2]
     # encode variance
@@ -188,7 +188,9 @@ def decode(loc, priors, variances):
     Return:
         decoded bounding box predictions
     """
-
+    if torch.cuda.is_available():
+        loc = loc.cuda()
+        priors = priors.cuda()
     boxes = torch.cat((
         priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
         priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
@@ -325,18 +327,17 @@ def nms_circle(boxes, scores, overlap=0.5, top_k=200):
         cx2 = ((xx1+xx2)/2).reshape(xx1.size(0), 1)
         cy2 = ((yy1+yy2)/2).reshape(xx1.size(0), 1)
         d = ((cx1-cx2)**2 + (cy1-cy2)**2)**0.5
-        r1 = ((x2[i]-x1[i])/2).expand(xx1.size(0), 1)
-        r2 = ((xx2-xx1)/2).reshape(xx1.size(0), 1)
-        r = r1
-        R = r2
-        r[r2<r1] = r2[r2<r1]
-        R[r2<r1] = r1[r2<r1]
+        r1 = torch.clamp(((x2[i]-x1[i])/2), min=((y2[i]-y1[i])/2)).expand(xx1.size(0), 1)
+        r2 = torch.clamp(((xx2-xx1)/2), min=(yy2-yy1)/2).reshape(xx1.size(0), 1)
+        R = torch.clamp(r1, min=r2)
+        r = torch.clamp(r1, max=r2)
 
         part1 = r*r*torch.acos((d*d + r*r - R*R)/(2*d*r))
         part2 = R*R*torch.acos((d*d + R*R - r*r)/(2*d*R))
         part3 = 0.5*torch.sqrt((-d+r+R)*(d+r-R)*(d-r+R)*(d+r+R))
 
         inter = part1 + part2 - part3
+        inter[R>=d+r] = math.pi*r[R>=d+r]**2
         union = math.pi*((r1**2)+(r2**2))-inter
         IoU = (inter/union).squeeze(1)  # store result in iou
         # keep only elements with an IoU <= overlap
