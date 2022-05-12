@@ -16,8 +16,10 @@
 &nbsp;
 
 ## Changes
-- Change the prior anchor shape from rectangles to circles (with different scale of radius)
-- Change the function of calculate IoU
+- Change the prior anchor shape from rectangles to circles (with different scale of radius) /layers/functions/prior_box.py
+- Change the function of calculate IoU /layers/box_utils.py
+- Change the nms algorithm /layers/box_utils.py
+- Change the preprocess of dataset (change rectangles of bbox to circle)  /data/voc0712.py
 
 
 ## Installation
