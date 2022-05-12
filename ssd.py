@@ -31,7 +31,10 @@ class SSD(nn.Module):
         self.num_classes = num_classes
         self.cfg = (coco, voc)[num_classes == 21]
         self.priorbox = PriorBox(self.cfg)
-        self.priors = Variable(self.priorbox.forward(), volatile=True)
+        #deprecated:
+        # self.priors = Variable(self.priorbox.forward(), volatile=True)
+        with torch.no_grad():                      #updated version
+            self.priors = self.priorbox.forward()  #updated version
         self.size = size
 
         # SSD network
@@ -95,10 +98,6 @@ class SSD(nn.Module):
         loc = torch.cat([o.view(o.size(0), -1) for o in loc], 1)
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
 
-        print('conf')
-        print(conf.shape)
-        print('loc')
-        print(loc.shape)
         if self.phase == "test":
             output = self.detect.apply(self.num_classes, 0, 200, 0.01, 0.45,
             # PyTorch1.5.0 support new-style autograd function
