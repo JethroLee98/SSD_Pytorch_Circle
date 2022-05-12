@@ -148,7 +148,9 @@ You can specify the parameters listed in the `eval.py` file by flagging them or 
 - Currently, we provide the following PyTorch models:
     * SSD300 trained on VOC0712 (newest PyTorch weights)
       - https://s3.amazonaws.com/amdegroot-models/ssd300_mAP_77.43_v2.pth
-
+    * SSD300 trained on VOC0712 (change anchor shape to circle)
+      - https://drive.google.com/file/d/1i4Lg_Y-BIFv8kFBd5QzYSL4E39Cz5wrY/view?usp=sharing
+      
 ### Try the demo notebook
 - Make sure you have [jupyter notebook](http://jupyter.readthedocs.io/en/latest/install.html) installed.
 - Two alternatives for installing jupyter notebook:
