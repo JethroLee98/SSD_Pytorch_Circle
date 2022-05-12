@@ -25,7 +25,7 @@ VOC_CLASSES = (  # always index 0
     'sheep', 'sofa', 'train', 'tvmonitor')
 
 # note: if you used our download scripts, this should be right
-VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
+VOC_ROOT = osp.join("/local/rcs/ll3504/datasets/VOCdevkit/")
 
 
 class VOCAnnotationTransform(object):
@@ -67,11 +67,26 @@ class VOCAnnotationTransform(object):
             for i, pt in enumerate(pts):
                 cur_pt = int(bbox.find(pt).text) - 1
                 # scale height or width
-                cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
+                # cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
                 bndbox.append(cur_pt)
+            cx = (bndbox[0]+bndbox[2])/2
+            cy = (bndbox[1]+bndbox[3])/2
+            w = bndbox[2]-bndbox[0]
+            h = bndbox[3]-bndbox[1]
+            new_xmin = cx - min(w, h)/2
+            new_xmax = cx + min(w, h)/2
+            new_ymin = cy - min(w, h)/2
+            new_ymax = cy + min(w, h)/2
+            bndbox = [new_xmin, new_ymin, new_xmax, new_ymax]
+            new_bndbox = []
+            for i, pt in enumerate(bndbox):
+                # scale height or width
+                pt = pt/width if i % 2 == 0 else pt/height
+                new_bndbox.append(pt)
+
             label_idx = self.class_to_ind[name]
-            bndbox.append(label_idx)
-            res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
+            new_bndbox.append(label_idx)
+            res += [new_bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
             # img_id = target.find('filename').text[:-4]
 
         return res  # [[xmin, ymin, xmax, ymax, label_ind], ... ]
