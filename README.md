@@ -105,32 +105,32 @@ You can specify the parameters listed in the `eval.py` file by flagging them or 
 
 #### VOC2007 Test
 
-##### mAP
+##### mAP (threshold set as 0.3, since we change the shape to circle which will reduce the normal IoU between rectangles)
 
 | Original | Converted weiliu89 weights | From scratch w/o data aug | From scratch w/ data aug | Change Anchor shape to circle |
 |:-:|:-:|:-:|:-:|:-:|
-| 77.2 % | 77.26 % | 58.12% | 77.43 % | 31.46% |
+| 77.2 % | 77.26 % | 58.12% | 77.43 % | 49.56% |
+- AP for aeroplane = 0.4013
+- AP for bicycle = 0.7016
+- AP for bird = 0.5306
+- AP for boat = 0.2537
+- AP for bottle = 0.1386
+- AP for bus = 0.5813
+- AP for car = 0.5529
+- AP for cat = 0.7499
+- AP for chair = 0.3371
+- AP for cow = 0.4193
+- AP for diningtable = 0.4832
+- AP for dog = 0.6154
+- AP for horse = 0.8062
+- AP for motorbike = 0.6396
+- AP for person = 0.4684
+- AP for pottedplant = 0.1378
+- AP for sheep = 0.2929
+- AP for sofa = 0.5287
+- AP for train = 0.7480
+- AP for tvmonitor = 0.5261
 
-- AP for aeroplane = 0.0113
-- AP for bicycle = 0.5812
-- AP for bird = 0.4209
-- AP for boat = 0.1370
-- AP for bottle = 0.0305
-- AP for bus = 0.2779
-- AP for car = 0.1962
-- AP for cat = 0.5656
-- AP for chair = 0.2505
-- AP for cow = 0.3047
-- AP for diningtable = 0.2324
-- AP for dog = 0.4635
-- AP for horse = 0.5791
-- AP for motorbike = 0.5178
-- AP for person = 0.2800
-- AP for pottedplant = 0.0991
-- AP for sheep = 0.2820
-- AP for sofa = 0.1651
-- AP for train = 0.4641
-- AP for tvmonitor = 0.4337
 
 
 ##### FPS
