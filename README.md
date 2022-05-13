@@ -88,8 +88,7 @@ Params used:
 
 - Note:
   * For training, an NVIDIA GPU is strongly recommended for speed.
-  * For instructions on Visdom usage/installation, see the <a href='#installation'>Installation</a> section.
-  * You can pick-up training from a checkpoint by specifying the path as one of the training parameters (again, see `train.py` for options)
+
 
 ## Evaluation
 To evaluate a trained network:
